@@ -137,7 +137,9 @@ jobs:
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
 
       - name: Build APK
-        run: ./gradlew assembleDebug 2>&1 | tail -30
+        run: |
+          gradle wrapper --gradle-version 8.4 2>/dev/null && chmod +x gradlew && ./gradlew assembleDebug 2>&1 | tail -30
+          gradle assembleDebug 2>&1 | tail -30
 
       - uses: actions/upload-artifact@v4
         if: always()

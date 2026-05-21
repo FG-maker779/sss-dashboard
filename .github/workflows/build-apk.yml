@@ -12,43 +12,34 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platforms;android-34 build-tools;34.0.0'
-
-      - name: Create WebView App
         run: |
-          mkdir -p app/src/main/java/com/sss/dashboard app/src/main/res/values
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" 2>/dev/null
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
 
-          cat > settings.gradle << 'EOF'
-          rootProject.name = 'SSSDashboard'
+      - name: Create App
+        run: |
+          mkdir -p app/src/main/java/com/sss/dashboard
+
+          cat > settings.gradle << 'END'
           include ':app'
-          EOF
+          END
 
-          cat > build.gradle << 'EOF'
+          cat > build.gradle << 'END'
           plugins { id 'com.android.application' version '8.2.0' apply false }
-          EOF
+          END
 
-          cat > gradle.properties << 'EOF'
-          android.useAndroidX=true
-          org.gradle.jvmargs=-Xmx2048m
-          EOF
-
-          cat > app/build.gradle << 'EOF'
+          cat > app/build.gradle << 'END'
           plugins { id 'com.android.application' }
           android {
-            namespace 'com.sss.dashboard'
-            compileSdk 34
-            defaultConfig {
-              applicationId "com.sss.dashboard"
-              minSdk 21; targetSdk 34; versionCode 1; versionName "1.0"
-            }
+            namespace 'com.sss.dashboard'; compileSdk 34
+            defaultConfig { applicationId "com.sss.dashboard"; minSdk 21; targetSdk 34; versionCode 1; versionName "1.0" }
             buildTypes { release { minifyEnabled false } }
             compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
           }
-          EOF
+          END
 
-          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          cat > app/src/main/AndroidManifest.xml << 'END'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.INTERNET"/>
@@ -58,16 +49,13 @@ jobs:
               </activity>
             </application>
           </manifest>
-          EOF
+          END
 
-          cat > app/src/main/java/com/sss/dashboard/MainActivity.java << 'EOF'
+          cat > app/src/main/java/com/sss/dashboard/MainActivity.java << 'END'
           package com.sss.dashboard;
           import android.app.Activity;
           import android.os.Bundle;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-          import android.webkit.WebSettings;
-          import android.webkit.WebChromeClient;
+          import android.webkit.*;
           import android.view.WindowManager;
           public class MainActivity extends Activity {
             @Override
@@ -76,26 +64,16 @@ jobs:
               getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
               WebView wv = new WebView(this);
               WebSettings ws = wv.getSettings();
-              ws.setJavaScriptEnabled(true);
-              ws.setDomStorageEnabled(true);
-              ws.setDatabaseEnabled(true);
-              ws.setAllowFileAccess(true);
-              wv.setWebViewClient(new WebViewClient() {
-                public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                  view.loadUrl(url);
-                  return true;
-                }
-              });
-              wv.setWebChromeClient(new WebChromeClient());
+              ws.setJavaScriptEnabled(true); ws.setDomStorageEnabled(true);
+              wv.setWebViewClient(new WebViewClient());
               wv.loadUrl("https://FG-maker779.github.io/sss-dashboard/");
               setContentView(wv);
             }
           }
-          EOF
+          END
 
       - name: Build APK
-        run: |
-          ./gradlew assembleRelease
+        run: ./gradlew assembleRelease
 
       - uses: actions/upload-artifact@v4
         if: always()

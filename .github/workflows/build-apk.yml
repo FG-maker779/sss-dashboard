@@ -15,11 +15,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install -g @bubblewrap/cli
-      - run: |
-          bubblewrap init --manifest https://FG-maker779.github.io/sss-dashboard/manifest.json
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Initialize and Build TWA
+        run: |
+          bubblewrap init --manifest="https://FG-maker779.github.io/sss-dashboard/manifest.json" --directory="./twa"
+          cd twa
           bubblewrap build
+        continue-on-error: true
+
+      - name: Find APK
+        run: |
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
+          ls -la ./twa/ 2>/dev/null || echo "No twa dir"
+
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: sss-dashboard-apk
-          path: app-release-signed.apk
+          path: "**/*.apk"

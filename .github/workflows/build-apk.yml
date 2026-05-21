@@ -15,7 +15,6 @@ jobs:
 
       - name: Create Capacitor App
         run: |
-          # Download dashboard HTML as the app source
           mkdir -p www
           cp index.html www/
           cp manifest.json www/
@@ -24,9 +23,37 @@ jobs:
           cp icon-512.png www/
 
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "SSS工厂看板" "com.sss.dashboard" --web-dir=www
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/status-bar
+          npx cap init "SSS 工厂看板" "com.sss.dashboard" --web-dir=www
           npx cap add android
+
+      - name: Fullscreen config
+        run: |
+          # Hide status bar in Capacitor config
+          cat > capacitor.config.json << 'END'
+          {"appId":"com.sss.dashboard","appName":"SSS 工厂看板","webDir":"www","server":{"allowNavigation":["*"]},"android":{"allowMixedContent":true}}
+          END
+
+          # Fullscreen theme in Android manifest
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's|android:theme="@style/AppTheme"|android:theme="@android:style/Theme.NoTitleBar.Fullscreen"|' $MANIFEST
+
+          # Hide title bar in MainActivity
+          ACTIVITY="android/app/src/main/java/com/sss/dashboard/MainActivity.java"
+          cat > $ACTIVITY << 'END'
+          package com.sss.dashboard;
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+          import android.view.WindowManager;
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle b) {
+              super.onCreate(b);
+              getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+              getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            }
+          }
+          END
 
       - name: Build APK
         run: |

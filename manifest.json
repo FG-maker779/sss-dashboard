@@ -1,0 +1,14 @@
+{
+  "name": "SSS 工厂生产看板",
+  "short_name": "SSS看板",
+  "description": "Dashboard Produksi Pabrik SSS",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0e14",
+  "theme_color": "#e8a93e",
+  "orientation": "landscape",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}

@@ -9,27 +9,74 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+        with: {distribution: temurin, java-version: '17'}
       - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+        with: {node-version: '20'}
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-      - name: Initialize and Build TWA
+      - name: Create Android WebView App
         run: |
-          bubblewrap init --manifest="https://FG-maker779.github.io/sss-dashboard/manifest.json" --directory="./twa"
-          cd twa
-          bubblewrap build
-        continue-on-error: true
+          mkdir -p app/src/main/java/com/sss/dashboard app/src/main/res/values app/src/main/res/drawable
 
-      - name: Find APK
-        run: |
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
-          ls -la ./twa/ 2>/dev/null || echo "No twa dir"
+          cat > app/build.gradle << 'GRADLE'
+          plugins { id 'com.android.application' }
+          android {
+            namespace 'com.sss.dashboard'
+            compileSdk 34
+            defaultConfig {
+              applicationId "com.sss.dashboard"
+              minSdk 21; targetSdk 34; versionCode 1; versionName "1.0"
+            }
+            buildTypes { release { minifyEnabled false } }
+            compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+          }
+          GRADLE
+
+          cat > app/src/main/AndroidManifest.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <application android:allowBackup="true" android:label="SSS 工厂看板" android:supportsRtl="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:icon="@mipmap/ic_launcher">
+              <activity android:name=".MainActivity" android:exported="true">
+                <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          XML
+
+          cat > app/src/main/java/com/sss/dashboard/MainActivity.java << 'JAVA'
+          package com.sss.dashboard;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.webkit.WebSettings;
+          public class MainActivity extends Activity {
+            @Override
+            protected void onCreate(Bundle b) {
+              super.onCreate(b);
+              WebView wv = new WebView(this);
+              WebSettings ws = wv.getSettings();
+              ws.setJavaScriptEnabled(true);
+              ws.setDomStorageEnabled(true);
+              wv.setWebViewClient(new WebViewClient());
+              wv.loadUrl("https://FG-maker779.github.io/sss-dashboard/");
+              setContentView(wv);
+            }
+          }
+          JAVA
+
+          cat > settings.gradle << 'GRADLE'
+          include ':app'
+          GRADLE
+
+          cat > build.gradle << 'GRADLE'
+          plugins { id 'com.android.application' version '8.2.0' apply false }
+          GRADLE
+
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          ./gradlew assembleRelease || ./gradlew assembleDebug
 
       - uses: actions/upload-artifact@v4
         if: always()

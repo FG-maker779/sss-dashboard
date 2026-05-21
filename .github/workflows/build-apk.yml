@@ -141,8 +141,12 @@ jobs:
           gradle wrapper --gradle-version 8.4 2>/dev/null && chmod +x gradlew && ./gradlew assembleDebug 2>&1 | tail -30
           gradle assembleDebug 2>&1 | tail -30
 
+      - name: Find APK
+        if: always()
+        run: find . -name "*.apk" -type f 2>/dev/null || echo "No APK"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: sss-dashboard-apk
-          path: "app/build/outputs/apk/debug/*.apk"
+          path: "**/*.apk"
